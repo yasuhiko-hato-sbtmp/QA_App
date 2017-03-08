@@ -18,6 +18,7 @@ import android.util.Base64;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -139,7 +140,7 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                // ログイン済みのユーザーを取得する
+                // ログイン済みのユーザーを収録する
                 FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
 
                 if (user == null) {
@@ -152,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
                     intent.putExtra("genre", mGenre);
                     startActivity(intent);
                 }
+
             }
         });
 
@@ -195,7 +197,6 @@ public class MainActivity extends AppCompatActivity {
                 }
                 mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
                 mGenreRef.addChildEventListener(mEventListener);
-
                 return true;
             }
         });
@@ -208,6 +209,16 @@ public class MainActivity extends AppCompatActivity {
         mAdapter = new QuestionsListAdapter(this);
         mQuestionArrayList = new ArrayList<Question>();
         mAdapter.notifyDataSetChanged();
+
+        mListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                // Questionのインスタンスを渡して質問詳細画面を起動する
+                Intent intent = new Intent(getApplicationContext(), QuestionDetailActivity.class);
+                intent.putExtra("question", mQuestionArrayList.get(position));
+                startActivity(intent);
+            }
+        });
     }
 
     @Override
