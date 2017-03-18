@@ -17,6 +17,7 @@ public class Question implements Serializable {
     private int mGenre;
     private byte[] mBitmapArray;
     private ArrayList<Answer> mAnswerArrayList;
+    private String mFav;
 
     public String getTitle() {
         return mTitle;
@@ -37,6 +38,7 @@ public class Question implements Serializable {
     public String getQuestionUid() {
         return mQuestionUid;
     }
+
     public int getGenre() {
         return mGenre;
     }
@@ -49,7 +51,11 @@ public class Question implements Serializable {
         return mAnswerArrayList;
     }
 
-    public Question(String title, String body, String name, String uid, String questionUid, int genre, byte[] bytes, ArrayList<Answer> answers) {
+    public String getFav() {
+        return mFav;
+    }
+
+    public Question(String title, String body, String name, String uid, String questionUid, int genre, byte[] bytes, ArrayList<Answer> answers, String fav) {
         mTitle = title;
         mBody = body;
         mName = name;
@@ -58,5 +64,6 @@ public class Question implements Serializable {
         mGenre = genre;
         mBitmapArray = bytes.clone();
         mAnswerArrayList = answers;
+        mFav = fav;
     }
 }

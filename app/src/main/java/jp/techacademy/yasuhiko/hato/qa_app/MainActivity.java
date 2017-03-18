@@ -15,6 +15,7 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Base64;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
@@ -31,7 +32,7 @@ import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-
+import java.util.Set;
 
 
 public class MainActivity extends AppCompatActivity {
@@ -48,37 +49,25 @@ public class MainActivity extends AppCompatActivity {
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-            HashMap map = (HashMap) dataSnapshot.getValue();
-            String title = (String) map.get("title");
-            String body = (String) map.get("body");
-            String name = (String) map.get("name");
-            String uid = (String) map.get("uid");
-            String imageString = (String) map.get("image");
-            Bitmap image = null;
-            byte[] bytes;
-            if (imageString != null) {
-                BitmapFactory.Options options = new BitmapFactory.Options();
-                bytes = Base64.decode(imageString, Base64.DEFAULT);
-            } else {
-                bytes = new byte[0];
-            }
 
-            ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
-            HashMap answerMap = (HashMap) map.get("answers");
-            if (answerMap != null) {
-                for (Object key : answerMap.keySet()) {
-                    HashMap temp = (HashMap) answerMap.get((String) key);
-                    String answerBody = (String) temp.get("body");
-                    String answerName = (String) temp.get("name");
-                    String answerUid = (String) temp.get("uid");
-                    Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
-                    answerArrayList.add(answer);
+            if(mGenre != 0) {
+                HashMap map = (HashMap) dataSnapshot.getValue();
+                Question question = getQuestionFromHashMap(map, dataSnapshot.getKey());
+                mQuestionArrayList.add(question);
+                mAdapter.notifyDataSetChanged();
+            }
+            else{
+                HashMap maps = (HashMap) dataSnapshot.getValue();
+                Set<String> keys = maps.keySet();
+                for(String key: keys){
+                    HashMap map = (HashMap) maps.get(key);
+                    Question question = getQuestionFromHashMap(map, key);
+                    if(question.getFav().equals("true")){
+                        mQuestionArrayList.add(question);
+                    }
                 }
+                mAdapter.notifyDataSetChanged();
             }
-
-            Question question = new Question(title, body, name, uid, dataSnapshot.getKey(), mGenre, bytes, answerArrayList);
-            mQuestionArrayList.add(question);
-            mAdapter.notifyDataSetChanged();
         }
 
         @Override
@@ -122,6 +111,40 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
+
+    private Question getQuestionFromHashMap(HashMap map, String qId){
+        String title = (String) map.get("title");
+        String body = (String) map.get("body");
+        String name = (String) map.get("name");
+        String uid = (String) map.get("uid");
+        String imageString = (String) map.get("image");
+        Bitmap image = null;
+        byte[] bytes;
+        if (imageString != null) {
+            BitmapFactory.Options options = new BitmapFactory.Options();
+            bytes = Base64.decode(imageString, Base64.DEFAULT);
+        } else {
+            bytes = new byte[0];
+        }
+        String fav = (String) map.get("fav");
+
+        ArrayList<Answer> answerArrayList = new ArrayList<Answer>();
+        HashMap answerMap = (HashMap) map.get("answers");
+        if (answerMap != null) {
+            for (Object key : answerMap.keySet()) {
+                HashMap temp = (HashMap) answerMap.get((String) key);
+                String answerBody = (String) temp.get("body");
+                String answerName = (String) temp.get("name");
+                String answerUid = (String) temp.get("uid");
+                Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
+                answerArrayList.add(answer);
+            }
+        }
+
+        Question question = new Question(title, body, name, uid, qId, mGenre, bytes, answerArrayList, fav);
+        return question;
+    }
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -182,6 +205,18 @@ public class MainActivity extends AppCompatActivity {
                     mToolbar.setTitle("コンピューター");
                     mGenre = 4;
                 }
+                else if(id == R.id.nav_fav){ // お気に入り
+                    FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                    if (user == null) {
+                        // ログインしていなければログイン画面に遷移させる
+                        Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                        startActivity(intent);
+                    } else {
+                        mToolbar.setTitle("お気に入り");
+                        mGenre = 0;
+                    }
+
+                }
 
                 DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
                 drawer.closeDrawer(GravityCompat.START);
@@ -195,7 +230,12 @@ public class MainActivity extends AppCompatActivity {
                 if (mGenreRef != null) {
                     mGenreRef.removeEventListener(mEventListener);
                 }
-                mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
+                if(mGenre != 0) {
+                    mGenreRef = mDatabaseReference.child(Const.ContentsPATH).child(String.valueOf(mGenre));
+                }
+                else{
+                    mGenreRef = mDatabaseReference.child(Const.ContentsPATH);
+                }
                 mGenreRef.addChildEventListener(mEventListener);
                 return true;
             }

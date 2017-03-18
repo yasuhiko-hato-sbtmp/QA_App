@@ -186,6 +186,7 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
                 data.put("image", bitmapString);
             }
 
+            data.put("fav", "false");
             genreRef.push().setValue(data, this);
             mProgress.show();
         }

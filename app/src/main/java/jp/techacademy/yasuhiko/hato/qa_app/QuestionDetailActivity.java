@@ -1,11 +1,15 @@
 package jp.techacademy.yasuhiko.hato.qa_app;
 
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.View;
+import android.widget.ImageView;
 import android.widget.ListView;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -17,14 +21,20 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.HashMap;
+import java.util.Map;
 
-public class QuestionDetailActivity extends AppCompatActivity {
+public class QuestionDetailActivity extends AppCompatActivity implements DatabaseReference.CompletionListener {
 
     private ListView mListView;
     private Question mQuestion;
     private QuestionDetailListAdapter mAdapter;
 
     private DatabaseReference mAnswerRef;
+
+    private String mFavStatus = "false";
+    private ImageView mFavStatusImageView;
+
+    private ProgressDialog mProgress;
 
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
@@ -110,5 +120,89 @@ public class QuestionDetailActivity extends AppCompatActivity {
         DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
         mAnswerRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mQuestion.getGenre())).child(mQuestion.getQuestionUid()).child(Const.AnswersPATH);
         mAnswerRef.addChildEventListener(mEventListener);
+
+
+        mProgress = new ProgressDialog(this);
+        mProgress.setMessage("Fav処理中...");
+
+        mFavStatusImageView = (ImageView)findViewById(R.id.favStatus);
+        initialSetFavImage();
+        mFavStatusImageView.setOnClickListener(
+                new View.OnClickListener() {
+                    public void onClick(View v) {
+                        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+                        if (user == null) {
+                            Snackbar.make(v, "Login to use fav.", Snackbar.LENGTH_INDEFINITE)
+                                    .setAction("LOGIN", new View.OnClickListener(){
+                                        @Override
+                                        public void onClick(View view) {
+                                            Intent intent = new Intent(getApplicationContext(), LoginActivity.class);
+                                            startActivity(intent);
+                                        }
+                                    })
+                                    .show();
+                        } else {
+                            setFavStatus();
+                        }
+                    }
+                }
+        );
+    }
+
+    private void initialSetFavImage(){
+        FirebaseUser user = FirebaseAuth.getInstance().getCurrentUser();
+        if (user == null) {
+            mFavStatusImageView.setImageResource(R.drawable.unfav);
+        }
+        else{
+            mFavStatus = mQuestion.getFav();
+            Log.d("Favstatus", mFavStatus);
+            if(mFavStatus.equals("true")){
+                mFavStatusImageView.setImageResource(R.drawable.fav);
+            }
+            else{
+                mFavStatusImageView.setImageResource(R.drawable.unfav);
+            }
+        }
+    }
+
+    private void setFavStatus(){
+        if(mFavStatus.equals("true")){
+            Log.d("FavStatus", "fav -> unfav");
+            mFavStatus = "false";
+        }
+        else{
+            Log.d("FavStatus", "unfav -> fav");
+            mFavStatus = "true";
+        }
+
+        DatabaseReference dataBaseReference = FirebaseDatabase.getInstance().getReference();
+        DatabaseReference favRef = dataBaseReference.child(Const.ContentsPATH).child(String.valueOf(mQuestion.getGenre())).child(mQuestion.getQuestionUid());
+        Map<String, Object> data = new HashMap<String, Object>();
+
+        // fav
+        data.put("fav", mFavStatus);
+
+        mProgress.show();
+        favRef.updateChildren(data, this);
+    }
+
+
+
+    @Override
+    public void onComplete(DatabaseError databaseError, DatabaseReference databaseReference) {
+        mProgress.dismiss();
+
+        if (databaseError == null) {
+            if(mFavStatus.equals("true")){
+                mFavStatusImageView.setImageResource(R.drawable.fav);
+            }
+            else{
+                mFavStatusImageView.setImageResource(R.drawable.unfav);
+            }
+        } else {
+            Snackbar.make(findViewById(android.R.id.content), "Fav処理に失敗しました", Snackbar.LENGTH_LONG).show();
+        }
+
     }
 }
