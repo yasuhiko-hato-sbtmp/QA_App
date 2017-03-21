@@ -54,6 +54,9 @@ public class Question implements Serializable {
     public String getFav() {
         return mFav;
     }
+    public void setFav(String fav){
+        mFav = fav;
+    }
 
     public Question(String title, String body, String name, String uid, String questionUid, int genre, byte[] bytes, ArrayList<Answer> answers, String fav) {
         mTitle = title;

@@ -49,7 +49,6 @@ public class MainActivity extends AppCompatActivity {
     private ChildEventListener mEventListener = new ChildEventListener() {
         @Override
         public void onChildAdded(DataSnapshot dataSnapshot, String s) {
-
             if(mGenre != 0) {
                 HashMap map = (HashMap) dataSnapshot.getValue();
                 Question question = getQuestionFromHashMap(map, dataSnapshot.getKey());
@@ -74,26 +73,62 @@ public class MainActivity extends AppCompatActivity {
         public void onChildChanged(DataSnapshot dataSnapshot, String s) {
             HashMap map = (HashMap) dataSnapshot.getValue();
 
-            // 変更があったQuestionを探す
-            for (Question question: mQuestionArrayList) {
-                if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
-                    // このアプリで変更がある可能性があるのは回答(Answer)のみ
-                    question.getAnswers().clear();
-                    HashMap answerMap = (HashMap) map.get("answers");
-                    if (answerMap != null) {
-                        for (Object key : answerMap.keySet()) {
-                            HashMap temp = (HashMap) answerMap.get((String) key);
-                            String answerBody = (String) temp.get("body");
-                            String answerName = (String) temp.get("name");
-                            String answerUid = (String) temp.get("uid");
-                            Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
-                            question.getAnswers().add(answer);
+            if(mGenre != 0) {
+                // 変更があったQuestionを探す
+                for (Question question : mQuestionArrayList) {
+                    if (dataSnapshot.getKey().equals(question.getQuestionUid())) {
+                        // for Answers
+                        question.getAnswers().clear();
+                        HashMap answerMap = (HashMap) map.get("answers");
+                        if (answerMap != null) {
+                            for (Object key : answerMap.keySet()) {
+                                HashMap temp = (HashMap) answerMap.get((String) key);
+                                String answerBody = (String) temp.get("body");
+                                String answerName = (String) temp.get("name");
+                                String answerUid = (String) temp.get("uid");
+                                Answer answer = new Answer(answerBody, answerName, answerUid, (String) key);
+                                question.getAnswers().add(answer);
+                            }
                         }
-                    }
 
-                    mAdapter.notifyDataSetChanged();
+                        mAdapter.notifyDataSetChanged();
+                    }
                 }
             }
+            else{
+                Set<String> keys = map.keySet();
+                for(String key: keys) { // for all genres
+                    HashMap tmpMap = (HashMap) map.get(key);
+                    Question tmpQuestion = getQuestionFromHashMap(tmpMap, key);
+                    int i = 0;
+                    for (Question question : mQuestionArrayList) {
+                        if (question.getQuestionUid().equals(tmpQuestion.getQuestionUid())) {
+                            // for Fav
+                            if(tmpQuestion.getFav().equals("false")){
+                                mQuestionArrayList.remove(i);
+                            }
+                            // For answers
+                            if(tmpQuestion.getAnswers().size() > question.getAnswers().size()){
+                                question.getAnswers().clear();
+                                HashMap answerMap = (HashMap) tmpMap.get("answers");
+                                if (answerMap != null) {
+                                    for (Object tmpKey : answerMap.keySet()) {
+                                        HashMap temp = (HashMap) answerMap.get((String) tmpKey);
+                                        String answerBody = (String) temp.get("body");
+                                        String answerName = (String) temp.get("name");
+                                        String answerUid = (String) temp.get("uid");
+                                        Answer answer = new Answer(answerBody, answerName, answerUid, (String) tmpKey);
+                                        question.getAnswers().add(answer);
+                                    }
+                                }
+                            }
+                            mAdapter.notifyDataSetChanged();
+                        }
+                        i++;
+                    }
+                }
+            }
+
         }
 
         @Override
@@ -141,8 +176,9 @@ public class MainActivity extends AppCompatActivity {
                 answerArrayList.add(answer);
             }
         }
+        int genre = Integer.parseInt((String) map.get("genre"));
 
-        Question question = new Question(title, body, name, uid, qId, mGenre, bytes, answerArrayList, fav);
+        Question question = new Question(title, body, name, uid, qId, genre, bytes, answerArrayList, fav);
         return question;
     }
 

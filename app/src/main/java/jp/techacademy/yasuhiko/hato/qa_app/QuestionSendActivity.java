@@ -187,6 +187,7 @@ public class QuestionSendActivity extends AppCompatActivity implements View.OnCl
             }
 
             data.put("fav", "false");
+            data.put("genre", String.valueOf(mGenre));
             genreRef.push().setValue(data, this);
             mProgress.show();
         }

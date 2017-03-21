@@ -156,7 +156,6 @@ public class QuestionDetailActivity extends AppCompatActivity implements Databas
         }
         else{
             mFavStatus = mQuestion.getFav();
-            Log.d("Favstatus", mFavStatus);
             if(mFavStatus.equals("true")){
                 mFavStatusImageView.setImageResource(R.drawable.fav);
             }
